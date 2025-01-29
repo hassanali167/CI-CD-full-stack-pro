@@ -1,9 +1,9 @@
+
 pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'local-python-app'     // Name of the Docker image
-        CONTAINER_NAME = 'python-app-container'  // Name of the Docker container
+        COMPOSE_FILE = 'docker-compose.yml'  // Define the Docker Compose file name
     }
 
     triggers {
@@ -19,44 +19,30 @@ pipeline {
                 }
             }
         }
-        stage('Delete Existing Docker Image') {
+
+        stage('Stop and Remove Existing Containers') {
             steps {
                 script {
-                    echo 'Deleting existing Docker image (if it exists)...'
-                    sh """
-                        docker image rmi --force ${IMAGE_NAME}:latest || true
-                    """
+                    echo 'Stopping and removing existing containers...'
+                    sh 'docker compose down --remove-orphans'
                 }
             }
         }
-        stage('Build New Docker Image') {
+
+        stage('Build and Start Containers') {
             steps {
                 script {
-                    echo 'Building new Docker image...'
-                    sh """
-                        docker build -t ${IMAGE_NAME}:latest .
-                    """
+                    echo 'Building and starting the application using Docker Compose...'
+                    sh 'docker compose up --build -d'
                 }
             }
         }
-        stage('Stop and Remove Existing Container') {
+
+        stage('Remove Old <none> Images') {
             steps {
                 script {
-                    echo 'Stopping and removing existing Docker container (if it exists)...'
-                    sh """
-                        docker stop ${CONTAINER_NAME} || true
-                        docker rm ${CONTAINER_NAME} || true
-                    """
-                }
-            }
-        }
-        stage('Deploy New Container') {
-            steps {
-                script {
-                    echo 'Deploying the new Docker container...'
-                    sh """
-                        docker run -d --name ${CONTAINER_NAME}  ${IMAGE_NAME}:latest
-                    """
+                    echo 'Removing old Docker images with <none> tag...'
+                    sh 'docker images --filter "dangling=true" -q | xargs -r docker rmi -f'
                 }
             }
         }
@@ -64,7 +50,7 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment completed successfully. New image is running!'
+            echo 'Deployment completed successfully. The application is running!'
         }
         failure {
             echo 'Pipeline failed. Check logs for details.'
