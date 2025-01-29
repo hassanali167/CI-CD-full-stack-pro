@@ -1,0 +1,50 @@
+# version: '3.8'
+
+# services:
+#   web:
+#     build: .
+#     ports:
+#       - "5000:5000"
+#     depends_on:
+#       - mongodb
+
+#   mongodb:
+#     image: mongo:6.0
+#     container_name: mongodb
+#     ports:
+#       - "27017:27017"
+  
+
+
+
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:latest  # Use the latest MongoDB image
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    networks:
+      - app-network
+    volumes:
+      - mongodb_data:/data/db  # Volume added for persistence
+    
+
+volumes:
+  mongodb_data:  # Declare the volume
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
+
