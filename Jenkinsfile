@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         COMPOSE_FILE = 'docker-compose.yml'  // Define the Docker Compose file name
-        PROJECT_NAME = 'simple-html-web' // Replace with your project name or container name
+        PROJECT_NAME = 'web'  // Your service name in the Docker Compose file
     }
 
     triggers {
