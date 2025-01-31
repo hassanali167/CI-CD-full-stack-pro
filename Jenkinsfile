@@ -1,9 +1,9 @@
-
 pipeline {
     agent any
 
     environment {
         COMPOSE_FILE = 'docker-compose.yml'  // Define the Docker Compose file name
+        PROJECT_NAME = 'simple-html-web' // Replace with your project name or container name
     }
 
     triggers {
@@ -23,8 +23,14 @@ pipeline {
         stage('Stop and Remove Existing Containers') {
             steps {
                 script {
-                    echo 'Stopping and removing existing containers...'
-                    sh 'docker compose down --remove-orphans'
+                    echo 'Checking for existing containers...'
+                    def containers = sh(script: "docker ps -q --filter name=${PROJECT_NAME}", returnStdout: true).trim()
+                    if (containers) {
+                        echo 'Stopping and removing existing containers...'
+                        sh "docker compose down --remove-orphans"
+                    } else {
+                        echo 'No existing containers found. Proceeding with the build.'
+                    }
                 }
             }
         }
