@@ -1,192 +1,180 @@
-To set up **Jenkins and GitHub** for a **CI/CD pipeline**, follow these steps:  
 
 ---
 
-## **1. Install Jenkins and Required Plugins**
-Since Jenkins is already running on **localhost:8080**, ensure you have the following plugins installed:  
+# **CI/CD Deployment Process with Jenkins, Docker Compose, GitHub, Webhook, and ngrok**
 
-🔹 **Git plugin**  
-🔹 **Pipeline plugin**  
-🔹 **GitHub Integration Plugin**  
-
-**To install plugins:**  
-1. Go to **Jenkins Dashboard** → **Manage Jenkins** → **Manage Plugins**.  
-2. Under the **Available** tab, search for:  
-   - **Git plugin**  
-   - **GitHub Integration Plugin**  
-   - **Pipeline**  
-3. Install them and restart Jenkins.  
+This guide explains how to set up a CI/CD pipeline using **Jenkins**, **Docker Compose**, **GitHub**, **ngrok**, and how to configure the deployment process for automatic updates.
 
 ---
 
-## **2. Generate a GitHub Personal Access Token (PAT)**
-Jenkins needs access to your **GitHub repository** to pull code.  
+### **1. Install and Set Up Jenkins**
 
-🔹 **Step to create a token:**  
-1. Go to **GitHub** → **Settings** → **Developer Settings** → **Personal Access Tokens** → **Tokens (classic)**.  
-2. Click **Generate new token (classic)**.  
-3. Select the following **scopes**:  
-   - `repo` (full control over private repositories)  
-   - `admin:repo_hook` (to manage webhooks)  
-4. Generate and **copy the token** (you won’t see it again).  
+If you haven’t already installed Jenkins, follow these steps:
 
----
-
-## **3. Add GitHub Credentials in Jenkins**
-1. Go to **Jenkins Dashboard** → **Manage Jenkins** → **Manage Credentials**.  
-2. Click **(global) → Add Credentials**.  
-3. Select **Kind: Username and Password**.  
-4. **Username:** Your GitHub username.  
-5. **Password:** Paste the **GitHub PAT** you copied.  
-6. Click **Save**.  
-
----
-
-## **4. Create a Jenkins Pipeline for GitHub**
-### **Option 1: Use Freestyle Job**
-1. Go to **Jenkins Dashboard** → **New Item**.  
-2. Select **Freestyle project** and click **OK**.  
-3. Under **Source Code Management**, select **Git**.  
-4. **Repository URL:** Paste your GitHub repo URL.  
-5. **Credentials:** Select the **GitHub PAT** you added earlier.  
-6. In **Build Triggers**, check **Poll SCM** and set:  
+1. **Install Jenkins on your server** (you can use Ubuntu/Kali Linux as your server):
+   ```bash
+   sudo apt update
+   sudo apt install openjdk-11-jdk
+   sudo apt install jenkins
+   sudo systemctl start jenkins
+   sudo systemctl enable jenkins
    ```
-   H/5 * * * *
-   ```
-   (polls GitHub every 5 minutes).  
-7. In **Build**, add your shell script or commands (e.g., `docker compose up -d`).  
-8. Click **Save & Build Now**.  
+
+2. **Access Jenkins** on `localhost:8080` or configure it to use your system's IP if accessing from other devices in your network (details are in the initial setup).
+
+3. **Install Required Plugins**:
+   - Go to **Manage Jenkins** → **Manage Plugins**.
+   - Install the following plugins:
+     - Git Plugin
+     - Docker Pipeline
+     - GitHub Integration Plugin
+     - Pipeline Plugin
 
 ---
 
-### **Option 2: Use a Pipeline Job (Recommended)**
-1. Go to **Jenkins Dashboard** → **New Item**.  
-2. Select **Pipeline**, name it, and click **OK**.  
-3. Under **Pipeline Definition**, select **Pipeline script from SCM**.  
-4. Choose **Git** and enter your **GitHub repository URL**.  
-5. Select the branch (**main** or another branch).  
-6. Under **Script Path**, enter:  
+### **2. Install Docker and Docker Compose**
+
+Jenkins needs Docker to build and deploy containers. Install Docker and Docker Compose on your Jenkins server:
+
+1. **Install Docker**:
+   ```bash
+   sudo apt update
+   sudo apt install docker.io
+   sudo systemctl enable docker
+   sudo systemctl start docker
    ```
-   Jenkinsfile
+
+2. **Install Docker Compose**:
+   ```bash
+   sudo apt install docker-compose
    ```
-   (Ensure your repo has a `Jenkinsfile`).  
-7. Click **Save & Build Now**.  
 
 ---
 
-## **5. Connect GitHub Webhook to Jenkins (Trigger Builds Automatically)**
-Instead of polling, you can set up a **webhook** for faster CI/CD.  
+### **3. Set Up GitHub Repository**
 
-🔹 **Steps to Add a Webhook:**  
-1. Go to your **GitHub Repository** → **Settings** → **Webhooks**.  
-2. Click **Add Webhook**.  
-3. In **Payload URL**, enter:  
-   ```
-   http://YOUR_JENKINS_IP:8080/github-webhook/
-   ```
-   (If Jenkins is local, you need to expose it using **ngrok** or deploy it on a server).  
-4. **Content type:** `application/json`.  
-5. **Select events:** Choose **"Just the push event"**.  
-6. Click **Add Webhook**.  
+1. **Create a GitHub repository** for your project if you haven't already.
+
+2. **Push Your Code to GitHub**.
+
+3. **Generate a GitHub Personal Access Token (PAT)** with `repo` and `admin:repo_hook` permissions (to interact with Jenkins). [Steps to generate PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token).
+
+4. **Add GitHub credentials to Jenkins**:
+   - Go to **Manage Jenkins** → **Manage Credentials** → **Global** → **Add Credentials**.
+   - Choose **Kind** as **Username with Password**.
+   - Enter **GitHub Username** and **GitHub PAT**.
 
 ---
 
-## **6. Test the CI/CD Pipeline**
-✅ **Push new code to GitHub** and check if Jenkins automatically triggers the build.  
-✅ If using polling (`H/5 * * * *`), wait **5 minutes** and check the build logs.  
+### **4. Configure Jenkins Job for CI/CD Pipeline**
+
+1. **Create a Jenkins Pipeline Job**:
+   - Go to **New Item** → **Pipeline** → **Enter the Job Name** and click **OK**.
+   
+2. **Set GitHub Repository in Jenkins Pipeline**:
+   - Under **Pipeline Definition**, select **Pipeline script from SCM**.
+   - Set **SCM** to **Git**, and enter your GitHub repository URL.
+   - Use the **GitHub credentials** you created earlier.
+   
+3. **Create a Jenkinsfile in your GitHub repository**:
+   - The Jenkinsfile defines the steps for building and deploying your application. Make sure it's present in the root of your repository.
+
+
+### **4. Set Up Webhook for GitHub to Trigger Jenkins Build**
+
+1. **Create Webhook on GitHub**:
+   - Go to your GitHub repository → **Settings** → **Webhooks** → **Add Webhook**.
+   - In **Payload URL**, enter:
+     ```bash
+     http://YOUR_JENKINS_IP:8080/github-webhook/
+     ```
+     (If Jenkins is local, use **ngrok** to expose the URL, or configure port forwarding if it's hosted on a server).
+   - Set **Content type** to `application/json`.
+   - Choose the event as **Just the push event**.
+   
+2. **Test the webhook**: Push a new commit to your GitHub repository and verify that Jenkins triggers a build.
 
 ---
 
-## **🔹 Important Notes**
-✔️ If Jenkins is **running locally**, GitHub **can't reach it** directly for webhooks. Use **ngrok**:  
+### **6. Use ngrok for Exposing Jenkins to GitHub Webhook (Optional for Local Setup)**
+
+If Jenkins is running locally and GitHub can’t directly reach it, use **ngrok** to tunnel the connection:
+
+1. **Install ngrok**:
+   ```bash
+   sudo apt install ngrok
    ```
+
+2. **Expose Jenkins with ngrok**:
+   ```bash
    ngrok http 8080
    ```
-   Then replace the **GitHub Webhook URL** with `http://ngrok.io/github-webhook/`.  
-✔️ If Jenkins is **hosted on a server**, use the **public IP** instead.  
-✔️ If facing permission issues, **add your SSH key** to GitHub and Jenkins.  
+add your authentication token of ngrok 
+   ngrok will provide a public URL like `https://abcd.ngrok.io`.
 
-🚀 **Now you have a fully automated CI/CD pipeline between GitHub and Jenkins!** Let me know if you need help! 😃
-
-
-
-
---------------------------------------------------------------------------------------------------------------------------------------------------
-
-To make Jenkins accessible via **your system's IP address (e.g., `192.168.1.100:8080`)** in **Kali Linux**, follow these steps:
+3. **Update GitHub Webhook**:
+   - Replace the Payload URL in your GitHub webhook with the **ngrok URL**:
+     ```bash
+     https://abcd.ngrok.io/github-webhook/
+     ```
 
 ---
 
-### **1. Configure Jenkins to Listen on Your System's IP**
-By default, Jenkins listens on **localhost (127.0.0.1:8080)**. You need to change it to your **system IP**.
+### **7. Configure Docker for Deployment on a Server**
 
-1. **Open Jenkins configuration file**:  
+To deploy using **Docker Compose**:
+
+2. **Deploy using Docker Compose in Jenkins**:
+   - In your Jenkinsfile, use the command `docker-compose up -d` to start the application in detached mode.
+
+---
+
+### **8. Monitor Jenkins Build Logs and Deployment Status**
+
+1. **Access Jenkins Dashboard**: After pushing code or triggering a build manually, you can monitor the build status and logs through the **Jenkins Dashboard**.
+   
+2. **Troubleshooting**: Check the console output of each Jenkins build for any errors related to the Docker build or deployment process.
+
+---
+
+### **9. Automate the Deployment Process**
+
+Once the pipeline is set up:
+
+- Any **push to GitHub** triggers the webhook and the Jenkins pipeline.
+- Jenkins checks the code, builds the Docker image, and deploys it using Docker Compose.
+
+---
+
+### **10. (Optional) Expose Jenkins Publicly for Remote Access**
+
+If you want to access Jenkins from outside your network:
+
+1. **Configure port forwarding** on your router to forward port `8080` to the machine where Jenkins is running.
+   
+2. **Access Jenkins from public IP**: Use the external IP of your machine:
    ```bash
-   sudo nano /etc/default/jenkins
+   http://<public-ip>:8080
    ```
-2. **Find this line**:
-   ```bash
-   HTTP_HOST=127.0.0.1
-   ```
-3. **Change it to your system IP** (check with `ip a` command):
-   ```bash
-   HTTP_HOST=192.168.1.100
-   ```
-   (Replace `192.168.1.100` with your actual system IP)
-
-4. **Save and exit** (`CTRL + X`, then `Y`, then `Enter`).
 
 ---
 
-### **2. Restart Jenkins to Apply Changes**
-```bash
-sudo systemctl restart jenkins
-```
-Check if Jenkins is running:
-```bash
-sudo systemctl status jenkins
-```
-If it's running correctly, you should see **"Active: running"**.
+### **Summary**
 
----
-# **4. Find Your System IP**
-Run:
-```bash
-ip a
-```
-Find your **Wi-Fi (wlan0)** or **Ethernet (eth0)** IP address (e.g., `192.168.1.100`).
+With the above steps:
 
----
+- **GitHub** is the source repository for your application code.
+- **Jenkins** automates the build and deployment pipeline using **Docker Compose**.
+- **Webhook** triggers Jenkins builds whenever you push new code to GitHub.
+- **ngrok** is used for exposing Jenkins if it's running locally.
+- **Docker** is used for deploying the application to the server.
 
-### **5. Access Jenkins**
-Now, open your browser and access Jenkins using:
-```
-http://192.168.1.100:8080
-```
-**Instead of `localhost:8080`, it will now be accessible via your system IP.**
+Now, you have a fully automated **CI/CD pipeline** that deploys your code to production using Docker Compose, triggered by code pushes to GitHub.
 
----
 
-### **6. (Optional) Make Jenkins Accessible from Outside the Network**
-If you want to access Jenkins from another network or the internet:
-- **Use Ngrok for temporary access**:
-  ```bash
-  ngrok http 8080
-  ```
-  It will provide a public URL like `https://abcd.ngrok.io`.
-  
-- **Port Forwarding in Router**:  
-  - Go to your **router settings**.
-  - Forward **port 8080** to your **system's IP**.
-  - Find your **public IP** using:
-    ```bash
-    curl ifconfig.me
-    ```
-  - Access Jenkins via:
-    ```
-    http://<PUBLIC_IP>:8080
-    ```
 
----
 
-✅ **Now, Jenkins is accessible using your system IP!** 🚀 Let me know if you need more help. 😊
+
+
+process flow:
+code ----> github---->ngrok-webhook-------jenkins----------docker-contanier--------server
