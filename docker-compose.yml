@@ -12,7 +12,7 @@ services:
       - app-network
 
   mongodb:
-    image: mongo:latest  # Use the latest MongoDB image
+    image: mongo:4.4  # Use the latest MongoDB image
     container_name: mongodb
     ports:
       - "27017:27017"
