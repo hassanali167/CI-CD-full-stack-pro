@@ -1,9 +1,9 @@
-
 version: '3.8'
 
 services:
   web:
     build: .
+    container_name: simple-html-web  # Name the container to match with Jenkins
     ports:
       - "5000:5000"
     depends_on:
@@ -12,21 +12,19 @@ services:
       - app-network
 
   mongodb:
-    image: mongo:4.4  # Use the latest MongoDB image
+    image: mongo:4.4  # Use the MongoDB image
     container_name: mongodb
     ports:
       - "27017:27017"
     networks:
       - app-network
     volumes:
-      - mongodb_data:/data/db  # Volume added for persistence
-    
+      - mongodb_data:/data/db  # Volume for MongoDB data persistence
 
 volumes:
-  mongodb_data:  # Declare the volume
+  mongodb_data:  # Declare the volume for MongoDB
     driver: local
 
 networks:
   app-network:
     driver: bridge
-
